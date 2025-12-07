@@ -386,7 +386,7 @@ export default function HomeContent() {
           </div>
 
           {/* Albertsons Section */}
-          <div className="bg-card shadow-lg rounded-lg p-4 border border-border">
+          {/* <div className="bg-card shadow-lg rounded-lg p-4 border border-border">
             <div className="flex items-center gap-3 mb-2">
               <div className="bg-white p-1 rounded">
                 <img
@@ -441,7 +441,7 @@ export default function HomeContent() {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
 
       </div>
