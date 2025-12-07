@@ -6,6 +6,8 @@ import FlyerCard from "@/components/FlyerCard";
 import ImageFlyerCard from "@/components/ImageFlyerCard";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ScrapeResult {
   success: boolean;
@@ -68,7 +70,7 @@ export default function HomeContent() {
     } catch (error) {
       setFoodCoopResult({
         success: false,
-        message: "Failed to connect to scraper",
+        message: "Failed to connect",
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -98,7 +100,7 @@ export default function HomeContent() {
     } catch (error) {
       setShopNKartResult({
         success: false,
-        message: "Failed to connect to scraper",
+        message: "Failed to connect",
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -127,7 +129,7 @@ export default function HomeContent() {
     } catch (error) {
       setMarketOfChoiceResult({
         success: false,
-        message: "Failed to connect to scraper",
+        message: "Failed to connect",
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -151,7 +153,7 @@ export default function HomeContent() {
               Sales Flyers Scraper
             </h1>
             <p className="text-sm ">
-              Automatically scrape sales flyers from multiple websites
+              Automatically get the most recent sales flyers from local grocery stores
             </p>
           </div>
           <div className="ml-4">
@@ -175,19 +177,18 @@ export default function HomeContent() {
               </h2>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Click the button below to scrape the latest sales flyer from
+              Click the button to get the latest sales flyers from
               Ashland Food Coop
             </p>
 
-            <button
+            <Button
               onClick={scrapeAshlandFoodCoop}
               disabled={foodCoopLoading}
-              className="w-full sm:w-auto px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
             >
               {foodCoopLoading
-                ? "Scraping..."
+                ? <div className="flex items-center gap-2"><Loader2 className="animate-spin " /> Scraping...</div>
                 : "Ashland Food Coop"}
-            </button>
+            </Button>
 
             {foodCoopResult && (
               <div
@@ -250,36 +251,6 @@ export default function HomeContent() {
                       </div>
                     </div>
                   )}
-                {foodCoopResult.mainFlyerLink && (
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Main flyer link:
-                    </p>
-                    <a
-                      href={foodCoopResult.mainFlyerLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:text-primary/80 underline break-all"
-                    >
-                      {foodCoopResult.mainFlyerLink}
-                    </a>
-                  </div>
-                )}
-                {foodCoopResult.nationalCoopLink && (
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      National Co-op Grocers link:
-                    </p>
-                    <a
-                      href={foodCoopResult.nationalCoopLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:text-primary/80 underline break-all"
-                    >
-                      {foodCoopResult.nationalCoopLink}
-                    </a>
-                  </div>
-                )}
                 {foodCoopResult.screenshot && !foodCoopResult.pdfData && (
                   <div className="mt-4">
                     <p className="text-sm text-muted-foreground mb-2">
@@ -311,17 +282,16 @@ export default function HomeContent() {
               </h2>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Click the button below to scrape the latest sales flyers from
+              Click the button to get the latest sales flyers from
               Ashland Shop N Kart
             </p>
 
-            <button
+            <Button
               onClick={scrapeAshlandShopNKart}
               disabled={shopNKartLoading}
-              className="w-full sm:w-auto px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
             >
-              {shopNKartLoading ? "Scraping..." : "Shop N Kart"}
-            </button>
+              {shopNKartLoading ? <div className="flex items-center gap-2"><Loader2 className="animate-spin " /> Loading...</div> : "Shop N Kart"}
+            </Button>
 
             {/* Only show Available Flyers section after scraping */}
             {(shopNKartResult?.flyerData || shopNKartResult?.ionFlyerData) && (
@@ -371,17 +341,16 @@ export default function HomeContent() {
               </h2>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Click the button below to scrape the latest weekly sales flyer from
+              Click the button to get the latest weekly sales flyer from
               Market of Choice
             </p>
 
-            <button
+            <Button
               onClick={scrapeMarketOfChoice}
               disabled={marketOfChoiceLoading}
-              className="w-full sm:w-auto px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
             >
-              {marketOfChoiceLoading ? "Scraping..." : "Market of Choice"}
-            </button>
+              {marketOfChoiceLoading ? <div className="flex items-center gap-2"><Loader2 className="animate-spin " /> Loading...</div> : "Market of Choice"}
+            </Button>
 
             {marketOfChoiceResult && (
               <div
