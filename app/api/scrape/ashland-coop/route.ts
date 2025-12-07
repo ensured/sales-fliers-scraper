@@ -6,31 +6,28 @@ function extractPdfLinks(html: string): {
   mainFlyerLink: string | null;
   nationalCoopLink: string | null;
 } {
-  // Look for main flyer link (sales-flyers directory, not Co+op_Deals)
+  const BASE_URL = "https://ashlandfood.coop";
+
+  // Main flyer is in /sites/default/files/sales-flyers/
+  // Can be absolute or relative URL
   const mainFlyerMatch = html.match(
-    /href="(https:\/\/ashlandfood\.coop\/wp-content\/uploads\/sales-flyers\/[^"]+\.pdf)"/i
+    /href="((?:https:\/\/ashlandfood\.coop)?\/sites\/default\/files\/sales-flyers\/[^"]+\.pdf)"/i
   );
   let mainFlyerLink = mainFlyerMatch ? mainFlyerMatch[1] : null;
+  // Convert relative to absolute
+  if (mainFlyerLink && !mainFlyerLink.startsWith("http")) {
+    mainFlyerLink = BASE_URL + mainFlyerLink;
+  }
 
-  // Look for National Co-op link (contains Co+op_Deals or Co%2Bop_Deals)
+  // National Co-op flyer is in /sites/default/files/documents/
+  // Can be absolute or relative URL
   const coopMatch = html.match(
-    /href="(https:\/\/ashlandfood\.coop\/wp-content\/uploads\/sales-flyers\/[^"]*Co(?:\+|%2B)op_Deals[^"]*\.pdf)"/i
+    /href="((?:https:\/\/ashlandfood\.coop)?\/sites\/default\/files\/documents\/[^"]*Co(?:\+|%2B)op[^"]*\.pdf)"/i
   );
-  const nationalCoopLink = coopMatch ? coopMatch[1] : null;
-
-  // If mainFlyerLink is actually the coop link, try to find another
-  if (mainFlyerLink && nationalCoopLink && mainFlyerLink === nationalCoopLink) {
-    // Find all PDF links and pick the first non-coop one
-    const allLinks = html.matchAll(
-      /href="(https:\/\/ashlandfood\.coop\/wp-content\/uploads\/sales-flyers\/[^"]+\.pdf)"/gi
-    );
-    for (const match of allLinks) {
-      const link = match[1];
-      if (!link.includes("Co+op") && !link.includes("Co%2Bop")) {
-        mainFlyerLink = link;
-        break;
-      }
-    }
+  let nationalCoopLink = coopMatch ? coopMatch[1] : null;
+  // Convert relative to absolute
+  if (nationalCoopLink && !nationalCoopLink.startsWith("http")) {
+    nationalCoopLink = BASE_URL + nationalCoopLink;
   }
 
   console.log("Extracted PDF links:", { mainFlyerLink, nationalCoopLink });
