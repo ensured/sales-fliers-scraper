@@ -5,6 +5,7 @@ import PDFViewer from "./components/PDFViewer";
 import FlyerCard from "@/components/FlyerCard";
 import ImageFlyerCard from "@/components/ImageFlyerCard";
 import { ThemeToggle } from "@/components/theme-toggle";
+import Link from "next/link";
 
 interface ScrapeResult {
   success: boolean;
@@ -43,6 +44,12 @@ export default function HomeContent() {
   const [marketOfChoiceResult, setMarketOfChoiceResult] = useState<ScrapeResult | null>(
     null
   );
+  const [albertsonsLoading, setAlbertsonsLoading] = useState(false);
+  const [albertsonsResult, setAlbertsonsResult] = useState<{
+    success: boolean;
+    flyers?: Array<{ title: string; dateRange: string; imageUrl: string }>;
+    error?: string;
+  } | null>(null);
 
   const scrapeAshlandFoodCoop = async () => {
     setFoodCoopLoading(true);
@@ -131,8 +138,9 @@ export default function HomeContent() {
 
   function onPdfError(error: Error): void {
     console.error("PDF rendering error:", error);
-    // You could add state management here to show an error message to the user
   }
+
+
 
   return (
     <div className="min-h-screen py-4 px-2 sm:px-4 lg:px-6">
@@ -153,18 +161,20 @@ export default function HomeContent() {
 
         <div className="space-y-3">
           {/* Ashland Food Coop Section */}
-          <div className="shadow rounded-lg p-3 border dark:bg-[#dce1ffd2]">
-            <div className="flex items-center gap-3 mb-2 ">
-              <img
-                src="https://www.google.com/s2/favicons?domain=ashlandfood.coop&sz=32"
-                alt="Ashland Food Coop logo"
-                className="w-8 h-8 rounded"
-              />
-              <h2 className="text-lg font-semibold text-black/90">
+          <div className="bg-card shadow-lg rounded-lg p-4 border border-border">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-white p-1 rounded">
+                <img
+                  src="https://www.google.com/s2/favicons?domain=ashlandfood.coop&sz=32"
+                  alt="Ashland Food Coop logo"
+                  className="w-6 h-6"
+                />
+              </div>
+              <h2 className="text-lg font-semibold text-card-foreground">
                 Ashland Food Coop
               </h2>
             </div>
-            <p className="text-sm text-black/80 mb-3">
+            <p className="text-sm text-muted-foreground mb-3">
               Click the button below to scrape the latest sales flyer from
               Ashland Food Coop
             </p>
@@ -287,18 +297,20 @@ export default function HomeContent() {
           </div>
 
           {/* Ashland Shop N Kart Section */}
-          <div className="shadow rounded-lg p-3 border dark:bg-[#dce1ffd2]">
+          <div className="bg-card shadow-lg rounded-lg p-4 border border-border">
             <div className="flex items-center gap-3 mb-2">
-              <img
-                src="https://www.google.com/s2/favicons?domain=ashlandshopnkart.com&sz=32"
-                alt="Shop N Kart logo"
-                className="w-8 h-8 rounded"
-              />
-              <h2 className="text-lg font-semibold text-black/90">
+              <div className="bg-white p-1 rounded">
+                <img
+                  src="https://www.google.com/s2/favicons?domain=ashlandshopnkart.com&sz=32"
+                  alt="Shop N Kart logo"
+                  className="w-6 h-6"
+                />
+              </div>
+              <h2 className="text-lg font-semibold text-card-foreground">
                 Ashland Shop N Kart
               </h2>
             </div>
-            <p className="text-sm text-black/80 mb-3">
+            <p className="text-sm text-muted-foreground mb-3">
               Click the button below to scrape the latest sales flyers from
               Ashland Shop N Kart
             </p>
@@ -345,18 +357,20 @@ export default function HomeContent() {
           </div>
 
           {/* Market of Choice Section */}
-          <div className="shadow rounded-lg p-3 border dark:bg-[#dce1ffd2]">
+          <div className="bg-card shadow-lg rounded-lg p-4 border border-border">
             <div className="flex items-center gap-3 mb-2">
-              <img
-                src="https://www.google.com/s2/favicons?domain=marketofchoice.com&sz=32"
-                alt="Market of Choice logo"
-                className="w-8 h-8 rounded"
-              />
-              <h2 className="text-lg font-semibold text-black/90">
+              <div className="bg-white p-1 rounded">
+                <img
+                  src="https://www.google.com/s2/favicons?domain=marketofchoice.com&sz=32"
+                  alt="Market of Choice logo"
+                  className="w-6 h-6"
+                />
+              </div>
+              <h2 className="text-lg font-semibold text-card-foreground">
                 Market of Choice
               </h2>
             </div>
-            <p className="text-sm text-black/80 mb-3">
+            <p className="text-sm text-muted-foreground mb-3">
               Click the button below to scrape the latest weekly sales flyer from
               Market of Choice
             </p>
@@ -398,6 +412,64 @@ export default function HomeContent() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Albertsons Section */}
+          <div className="bg-card shadow-lg rounded-lg p-4 border border-border">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-white p-1 rounded">
+                <img
+                  src="https://www.google.com/s2/favicons?domain=albertsons.com&sz=32"
+                  alt="Albertsons logo"
+                  className="w-6 h-6"
+                />
+              </div>
+              <h2 className="text-lg font-semibold text-card-foreground">
+                Albertsons
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Click the button to load available weekly ads
+            </p>
+
+            <Link target="_blank" href="https://www.albertsons.com/weeklyad" className="w-full sm:w-auto px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors">
+              Albertsons
+            </Link>
+
+            {albertsonsResult?.error && (
+              <p className="mt-2 text-sm text-destructive">
+                Error: {albertsonsResult.error}
+              </p>
+            )}
+
+            {albertsonsResult?.flyers && albertsonsResult.flyers.length > 0 && (
+              <div className="mt-3">
+                <h3 className="text-lg font-bold mb-3">
+                  Available Weekly Ads
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {albertsonsResult.flyers.map((flyer, index) => (
+                    <a
+                      key={index}
+                      href="https://www.albertsons.com/weeklyad/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 bg-white rounded-lg border hover:shadow-md transition-shadow"
+                    >
+                      {flyer.imageUrl && (
+                        <img
+                          src={flyer.imageUrl}
+                          alt={flyer.title}
+                          className="w-full h-24 object-cover rounded mb-2"
+                        />
+                      )}
+                      <p className="font-medium text-sm text-gray-900">{flyer.title}</p>
+                      <p className="text-xs text-gray-500">{flyer.dateRange}</p>
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
           </div>

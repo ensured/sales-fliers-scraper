@@ -166,28 +166,28 @@ export default function FlyerCard({
   return (
     <>
       <div
-        className="bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-900 rounded-sm p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+        className="bg-card border border-border rounded-lg p-3 cursor-pointer hover:bg-accent transition-colors"
         onClick={() => setIsOpen(true)}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+          <h3 className="text-sm font-medium text-card-foreground truncate">
             {title}
           </h3>
           {pdfData && (
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs h-6 px-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="text-xs h-6 px-2"
             >
               View
             </Button>
           )}
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
+        <p className="text-xs text-muted-foreground truncate mt-1">
           {description}
         </p>
         {extractedDate && (
-          <p className="text-xs text-gray-300 dark:text-gray-600 font-medium">
+          <p className="text-xs text-muted-foreground/70 font-medium mt-1">
             {extractedDate}
           </p>
         )}
@@ -196,7 +196,7 @@ export default function FlyerCard({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="w-screen h-screen max-w-none max-h-none overflow-hidden p-0">
           <DialogHeader className="p-4 pb-0">
-            <DialogTitle className="text-lg font-medium text-gray-900 dark:text-white">
+            <DialogTitle className="text-lg font-medium">
               {title}
             </DialogTitle>
           </DialogHeader>
@@ -208,7 +208,7 @@ export default function FlyerCard({
                 onError={onPdfError}
               />
             ) : (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <div className="text-center py-8 text-muted-foreground">
                 PDF not available
               </div>
             )}

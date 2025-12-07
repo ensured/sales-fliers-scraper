@@ -25,6 +25,14 @@ export interface UnifiedCache {
     nationalCoopLink: string | null;
     lastUpdated: string;
   };
+  albertsons?: {
+    flyers: Array<{
+      title: string;
+      dateRange: string;
+      imageUrl: string;
+    }>;
+    lastUpdated: string;
+  };
   timestamp: string;
 }
 
