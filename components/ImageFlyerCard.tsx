@@ -174,10 +174,49 @@ export default function ImageFlyerCard({
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-lg">
-          <div className="px-4 py-3 border-b flex items-center justify-start gap-2 bg-background/70 backdrop-blur-md z-10 sticky top-0">
-            <DialogTitle className="text-lg font-semibold tracking-tight text-foreground/90 flex justify-center items-center w-full">
+          <div className="px-4 py-3 border-b flex items-center justify-start gap-4 bg-background/70 backdrop-blur-md z-10 sticky top-0">
+            <DialogTitle className="text-lg font-semibold tracking-tight text-foreground/90 truncate">
               {title}
             </DialogTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full hover:bg-accent"
+                onClick={handleZoomOut}
+                disabled={scale <= 0.5}
+                title="Zoom Out"
+              >
+                <ZoomOut className="h-4 w-4" />
+                <span className="sr-only">Zoom Out</span>
+              </Button>
+              <div className="flex items-center justify-center min-w-[3rem] px-2 text-xs font-medium tabular-nums text-muted-foreground select-none">
+                {Math.round(scale * 100)}%
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full hover:bg-accent"
+                onClick={handleZoomIn}
+                disabled={scale >= 5}
+                title="Zoom In"
+              >
+                <ZoomIn className="h-4 w-4" />
+                <span className="sr-only">Zoom In</span>
+              </Button>
+              <div className="w-px h-4 bg-border mx-1" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full hover:bg-accent"
+                onClick={handleReset}
+                disabled={scale === 1 && position.x === 0 && position.y === 0}
+                title="Reset Zoom"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span className="sr-only">Reset</span>
+              </Button>
+            </div>
           </div>
 
           <div
