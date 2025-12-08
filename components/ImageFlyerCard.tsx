@@ -43,12 +43,12 @@ export default function ImageFlyerCard({
   }, [isOpen]);
 
   const handleZoomIn = useCallback(() => {
-    setScale((prev) => Math.min(prev + 0.5, 5));
+    setScale((prev) => Math.min(prev + 0.2, 5));
   }, []);
 
   const handleZoomOut = useCallback(() => {
     setScale((prev) => {
-      const newScale = Math.max(prev - 0.5, 0.5);
+      const newScale = Math.max(prev - 0.2, 0.5);
       // Reset position if zooming back to 1 or below
       if (newScale <= 1) {
         setPosition({ x: 0, y: 0 });
@@ -165,7 +165,7 @@ export default function ImageFlyerCard({
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-screen h-screen max-w-none max-h-none overflow-hidden p-0">
+        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none my-4 overflow-hidden p-0">
           <DialogHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-lg font-medium">
@@ -206,7 +206,7 @@ export default function ImageFlyerCard({
 
           <div
             ref={containerRef}
-            className="overflow-hidden h-[calc(100vh-60px)] flex items-center justify-center bg-muted"
+            className="overflow-hidden h-[calc(100vh-9rem)] flex items-center justify-center bg-muted"
             onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}

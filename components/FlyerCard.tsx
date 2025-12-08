@@ -194,13 +194,13 @@ export default function FlyerCard({
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-screen h-screen max-w-none max-h-none overflow-hidden p-0">
+        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none my-4 overflow-hidden p-0">
           <DialogHeader className="p-4 pb-0">
             <DialogTitle className="text-lg font-medium">
               {title}
             </DialogTitle>
           </DialogHeader>
-          <div className="h-[calc(100vh-80px)]">
+          <div className="h-[calc(100vh-10rem)]">
             {pdfData ? (
               <PDFViewer
                 file={pdfData}
