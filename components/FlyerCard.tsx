@@ -16,6 +16,7 @@ interface FlyerCardProps {
   pdfData?: string;
   pdfFileName?: string;
   url?: string;
+  dateRange?: string;
   onDocumentLoadSuccess?: (numPages: number) => void;
   onPdfError?: (error: Error) => void;
 }
@@ -26,6 +27,7 @@ export default function FlyerCard({
   pdfData,
   pdfFileName,
   url,
+  dateRange,
   onDocumentLoadSuccess,
   onPdfError,
 }: FlyerCardProps) {
@@ -161,7 +163,7 @@ export default function FlyerCard({
   };
 
   const extractedDate =
-    extractDateFromUrl(url) || extractDateFromFilename(pdfFileName);
+    dateRange || extractDateFromUrl(url) || extractDateFromFilename(pdfFileName);
 
   return (
     <>

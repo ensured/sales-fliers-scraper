@@ -32,7 +32,7 @@ export default function ImageFlyerCard({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerNode, setContainerNode] = useState<HTMLDivElement | null>(null);
 
   // Reset zoom and position when dialog closes
   useEffect(() => {
@@ -62,20 +62,30 @@ export default function ImageFlyerCard({
     setPosition({ x: 0, y: 0 });
   }, []);
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    // Normalize deltaY for different input devices (mice vs trackpads)
-    // Mice typically use deltaMode 0 with larger values, trackpads use smaller values
-    const normalizedDelta = e.deltaY / (e.deltaMode === 0 ? 100 : 3);
-    const zoomStep = Math.sign(normalizedDelta) * Math.min(Math.abs(normalizedDelta) * 0.05, 0.15);
-    setScale((prev) => {
-      const newScale = Math.max(0.5, Math.min(prev - zoomStep, 5));
-      if (newScale <= 1) {
-        setPosition({ x: 0, y: 0 });
-      }
-      return newScale;
-    });
-  }, []);
+  // Use native non-passive listener to properly preventDefault (fixes "zoom too much" browser interference)
+  useEffect(() => {
+    const container = containerNode;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+
+      const normalizedDelta = e.deltaY / (e.deltaMode === 0 ? 100 : 3);
+      // Tuned clamp: max 4% change per event (doubled from ultra-conservative 2%)
+      const zoomStep = Math.sign(normalizedDelta) * Math.min(Math.abs(normalizedDelta) * 0.4, 0.5);
+
+      setScale((prev) => {
+        const newScale = Math.max(0.5, Math.min(prev - zoomStep, 5));
+        if (newScale <= 1 && prev > 1) {
+          setPosition({ x: 0, y: 0 });
+        }
+        return newScale;
+      });
+    };
+
+    container.addEventListener("wheel", onWheel, { passive: false });
+    return () => container.removeEventListener("wheel", onWheel);
+  }, [containerNode]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -171,9 +181,9 @@ export default function ImageFlyerCard({
           </div>
 
           <div
-            ref={containerRef}
+            ref={setContainerNode}
             className="overflow-hidden h-[calc(100vh-9rem)] flex items-center justify-center bg-muted"
-            onWheel={handleWheel}
+            // Native wheel listener attached in useEffect
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -187,13 +197,16 @@ export default function ImageFlyerCard({
               <img
                 src={imageData}
                 alt={title}
-                className="object-contain select-none"
+                className="object-contain select-none block"
                 draggable={false}
                 style={{
-                  maxWidth: scale <= 1 ? "100%" : "none",
-                  maxHeight: scale <= 1 ? "100%" : "none",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  width: "auto",
+                  height: "auto",
                   transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                  transition: isDragging ? "none" : "transform 0.2s ease-out",
+                  // Removing transition to prevent lag/jumps during mouse wheel zooming
+                  transition: "none",
                 }}
               />
             ) : (

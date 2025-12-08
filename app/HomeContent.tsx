@@ -371,10 +371,11 @@ export default function HomeContent() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FlyerCard
-                        title="Market of Choice Weekly"
-                        description={`Weekly deals and specials (${marketOfChoiceResult.dateRange || 'Current Week'})`}
+                        title="Market of Choice"
+                        description="Weekly deals and specials"
                         pdfData={marketOfChoiceResult.pdfData}
                         pdfFileName={marketOfChoiceResult.pdfFileName}
+                        dateRange={marketOfChoiceResult.dateRange || 'Current Week'}
                         url="https://marketofchoice.com/specials/weekly/"
                         onPdfError={onPdfError}
                       />
