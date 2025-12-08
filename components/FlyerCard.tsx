@@ -166,40 +166,43 @@ export default function FlyerCard({
   return (
     <>
       <div
-        className="bg-card border border-border rounded-lg p-3 cursor-pointer hover:bg-accent transition-colors"
+        className="group relative bg-card hover:shadow-lg transition-all duration-300 ease-out hover:-translate-y-1 rounded-xl border border-border/50 overflow-hidden cursor-pointer"
         onClick={() => setIsOpen(true)}
       >
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-card-foreground truncate">
-            {title}
-          </h3>
-          {pdfData && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs h-6 px-2"
-            >
-              View
-            </Button>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground truncate mt-1">
-          {description}
-        </p>
-        {extractedDate && (
-          <p className="text-xs text-muted-foreground/70 font-medium mt-1">
-            {extractedDate}
+        <div className="p-4 space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-lg text-card-foreground leading-tight group-hover:text-primary transition-colors">
+              {title}
+            </h3>
+            {extractedDate && (
+              <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 whitespace-nowrap">
+                {extractedDate}
+              </span>
+            )}
+          </div>
+
+          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+            {description}
           </p>
-        )}
+
+          <div className="pt-2 flex items-center text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
+            Click to view flyer →
+          </div>
+        </div>
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none my-4 overflow-hidden p-0">
-          <DialogHeader className="p-4 pb-0">
-            <DialogTitle className="text-lg font-medium">
+        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-lg">
+          <div className="px-4 py-3 border-b flex items-center justify-between bg-background/50 backdrop-blur-md z-10 sticky top-0">
+            <DialogTitle className="text-lg font-semibold tracking-tight text-foreground/90 flex justify-center! items-center! w-full!">
               {title}
             </DialogTitle>
-          </DialogHeader>
+            {extractedDate && (
+              <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
+                {extractedDate}
+              </span>
+            )}
+          </div>
           <div className="h-[calc(100vh-10rem)]">
             {pdfData ? (
               <PDFViewer

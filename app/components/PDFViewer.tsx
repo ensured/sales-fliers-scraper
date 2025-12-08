@@ -242,66 +242,70 @@ export default function PDFViewer({
   }, []);
 
   return (
-    <div className="flex flex-col w-full h-full">
-      {/* Controls Bar - Top */}
-      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        {/* Page Navigation */}
-        {numPages > 1 ? (
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={previousPage}
-              disabled={pageNumber <= 1}
-              className="h-9 w-9 rounded-full"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">
-              {pageNumber} / {numPages}
-            </span>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={nextPage}
-              disabled={pageNumber >= numPages}
-              className="h-9 w-9 rounded-full"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <div /> // Empty div to maintain flex spacing
-        )}
+    <div className="flex flex-col w-full h-full relative">
+      {/* Controls Overlay - Floating Top */}
+      <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between z-10 pointer-events-none">
+        {/* Page Navigation Pill */}
+        <div className="pointer-events-auto">
+          {numPages > 1 && (
+            <div className="flex items-center gap-1 bg-secondary/50 rounded-full p-1 border border-border/50 backdrop-blur-sm shadow-sm">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={previousPage}
+                disabled={pageNumber <= 1}
+                className="h-7 w-7 rounded-full hover:bg-background/80 transition-colors"
+                title="Previous Page"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-xs font-medium font-mono tabular-nums text-muted-foreground px-2 min-w-[3rem] text-center select-none">
+                {pageNumber} / {numPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={nextPage}
+                disabled={pageNumber >= numPages}
+                className="h-7 w-7 rounded-full hover:bg-background/80 transition-colors"
+                title="Next Page"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+        </div>
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1">
+        {/* Zoom Controls Pill */}
+        <div className="pointer-events-auto flex items-center bg-secondary/50 rounded-full p-1 border border-border/50 backdrop-blur-sm shadow-sm">
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
             onClick={handleZoomOut}
-            className="h-9 w-9 rounded-full"
+            className="h-7 w-7 rounded-full hover:bg-background/80 transition-colors"
           >
-            <ZoomOut className="h-4 w-4" />
+            <ZoomOut className="h-3.5 w-3.5" />
           </Button>
-          <div className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm font-medium min-w-[60px] text-center">
+          <div className="px-3 min-w-[3rem] text-center text-xs font-medium font-mono tabular-nums text-muted-foreground select-none">
             {Math.round(viewScale * 100)}%
           </div>
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
             onClick={handleZoomIn}
-            className="h-9 w-9 rounded-full"
+            className="h-7 w-7 rounded-full hover:bg-background/80 transition-colors"
           >
-            <ZoomIn className="h-4 w-4" />
+            <ZoomIn className="h-3.5 w-3.5" />
           </Button>
+          <div className="w-px h-4 bg-border mx-1" />
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
             onClick={handleReset}
-            className="h-9 w-9 rounded-full"
+            className="h-7 w-7 rounded-full hover:bg-background/80 transition-colors"
+            title="Reset View"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
