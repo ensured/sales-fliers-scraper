@@ -172,33 +172,33 @@ export default function ImageFlyerCard({
                 {title}
               </DialogTitle>
               {/* Zoom Controls - Horizontal */}
-              <div className="flex items-center gap-2 mr-8">
+              <div className="flex items-center gap-1">
                 <Button
                   variant="secondary"
                   size="icon"
                   onClick={handleZoomOut}
-                  className="h-9 w-9 rounded-full shadow-sm"
+                  className="h-8 w-8 rounded-full shadow-sm"
                 >
-                  <ZoomOut className="h-4 w-4" />
+                  <ZoomOut className="h-3.5 w-3.5" />
                 </Button>
-                <div className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm font-medium min-w-[60px] text-center">
+                <div className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs font-medium min-w-[50px] text-center h-8 flex items-center justify-center">
                   {Math.round(scale * 100)}%
                 </div>
                 <Button
                   variant="secondary"
                   size="icon"
                   onClick={handleZoomIn}
-                  className="h-9 w-9 rounded-full shadow-sm"
+                  className="h-8 w-8 rounded-full shadow-sm"
                 >
-                  <ZoomIn className="h-4 w-4" />
+                  <ZoomIn className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="secondary"
                   size="icon"
                   onClick={handleReset}
-                  className="h-9 w-9 rounded-full shadow-sm"
+                  className="h-8 w-8 rounded-full shadow-sm"
                 >
-                  <RotateCcw className="h-4 w-4" />
+                  <RotateCcw className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>

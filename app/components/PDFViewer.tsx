@@ -247,7 +247,7 @@ export default function PDFViewer({
       <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* Page Navigation */}
         {numPages > 1 ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="secondary"
               size="icon"
@@ -257,7 +257,7 @@ export default function PDFViewer({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px] text-center">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">
               {pageNumber} / {numPages}
             </span>
             <Button
@@ -275,7 +275,7 @@ export default function PDFViewer({
         )}
 
         {/* Zoom Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="secondary"
             size="icon"
