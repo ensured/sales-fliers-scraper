@@ -154,12 +154,12 @@ export default function PDFViewer({
   const nextPage = () => changePage(1);
 
   const handleZoomIn = useCallback(() => {
-    setViewScale((prev) => Math.min(prev + 0.5, 5));
+    setViewScale((prev) => Math.min(prev + 0.2, 5));
   }, []);
 
   const handleZoomOut = useCallback(() => {
     setViewScale((prev) => {
-      const newScale = Math.max(prev - 0.5, 0.5);
+      const newScale = Math.max(prev - 0.2, 0.5);
       if (newScale <= 1) {
         setPosition({ x: 0, y: 0 });
       }
