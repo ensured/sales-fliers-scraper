@@ -82,7 +82,7 @@ export default function FlyerCard({
           // YYYYMMDD format
           formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(
             4,
-            6
+            6,
           )}-${dateStr.slice(6, 8)}`;
         } else {
           formattedDate = dateStr;
@@ -117,7 +117,7 @@ export default function FlyerCard({
     const singleMonthRangePattern =
       /(January|February|March|April|May|June|July|August|September|October|November|December) (\d{1,2}) to (\d{1,2})/i;
     const singleMonthRangeMatch = decodedFilename.match(
-      singleMonthRangePattern
+      singleMonthRangePattern,
     );
     if (singleMonthRangeMatch) {
       const [, month, startDay, endDay] = singleMonthRangeMatch;
@@ -149,7 +149,7 @@ export default function FlyerCard({
           // YYYYMMDD format
           formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(
             4,
-            6
+            6,
           )}-${dateStr.slice(6, 8)}`;
         } else {
           formattedDate = dateStr;
@@ -163,21 +163,23 @@ export default function FlyerCard({
   };
 
   const extractedDate =
-    dateRange || extractDateFromUrl(url) || extractDateFromFilename(pdfFileName);
+    dateRange ||
+    extractDateFromUrl(url) ||
+    extractDateFromFilename(pdfFileName);
 
   return (
     <>
       <div
-        className="group relative bg-card hover:shadow-lg transition-all duration-300 ease-out hover:-translate-y-1 rounded-xl border border-border/50 overflow-hidden cursor-pointer"
+        className="group relative bg-card hover:shadow-xl hover:shadow-black/3 dark:hover:shadow-black/15 transition-all duration-300 ease-out hover:-translate-y-1 rounded-xl border border-border/50 overflow-hidden cursor-pointer"
         onClick={() => setIsOpen(true)}
       >
-        <div className="p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-lg text-card-foreground leading-tight group-hover:text-primary transition-colors">
+        <div className="p-5 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="font-semibold text-base text-card-foreground leading-snug group-hover:text-primary transition-colors">
               {title}
             </h3>
             {extractedDate && (
-              <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 whitespace-nowrap">
+              <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors border-transparent bg-secondary text-secondary-foreground whitespace-nowrap shrink-0">
                 {extractedDate}
               </span>
             )}
@@ -187,20 +189,33 @@ export default function FlyerCard({
             {description}
           </p>
 
-          <div className="pt-2 flex items-center text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
-            Click to view flyer →
+          <div className="pt-1 flex items-center gap-1.5 text-xs font-medium text-primary/70 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0 duration-300">
+            <span>Click to view</span>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
           </div>
         </div>
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-lg">
-          <div className="px-4 py-3 border-b flex items-center justify-between bg-background/50 backdrop-blur-md z-10 sticky top-0">
-            <DialogTitle className="text-lg font-semibold tracking-tight text-foreground/90 flex justify-center! items-center! w-full!">
+        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-xl">
+          <div className="px-5 py-3.5 border-b border-border/60 flex items-center gap-4 bg-background/70 backdrop-blur-md z-10 sticky top-0">
+            <DialogTitle className="text-base font-semibold tracking-tight text-foreground/90 truncate flex-1">
               {title}
             </DialogTitle>
             {extractedDate && (
-              <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
+              <span className="text-[11px] font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-md shrink-0">
                 {extractedDate}
               </span>
             )}

@@ -32,7 +32,9 @@ export default function ImageFlyerCard({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [containerNode, setContainerNode] = useState<HTMLDivElement | null>(null);
+  const [containerNode, setContainerNode] = useState<HTMLDivElement | null>(
+    null,
+  );
 
   // Reset zoom and position when dialog closes
   useEffect(() => {
@@ -72,7 +74,9 @@ export default function ImageFlyerCard({
 
       const normalizedDelta = e.deltaY / (e.deltaMode === 0 ? 100 : 3);
       // Tuned clamp: max 4% change per event (doubled from ultra-conservative 2%)
-      const zoomStep = Math.sign(normalizedDelta) * Math.min(Math.abs(normalizedDelta) * 0.4, 0.5);
+      const zoomStep =
+        Math.sign(normalizedDelta) *
+        Math.min(Math.abs(normalizedDelta) * 0.4, 0.5);
 
       setScale((prev) => {
         const newScale = Math.max(0.5, Math.min(prev - zoomStep, 5));
@@ -94,7 +98,7 @@ export default function ImageFlyerCard({
         setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
       }
     },
-    [scale, position]
+    [scale, position],
   );
 
   const handleMouseMove = useCallback(
@@ -106,7 +110,7 @@ export default function ImageFlyerCard({
         });
       }
     },
-    [isDragging, dragStart, scale]
+    [isDragging, dragStart, scale],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -124,7 +128,7 @@ export default function ImageFlyerCard({
         });
       }
     },
-    [scale, position]
+    [scale, position],
   );
 
   const handleTouchMove = useCallback(
@@ -137,7 +141,7 @@ export default function ImageFlyerCard({
         });
       }
     },
-    [isDragging, dragStart, scale]
+    [isDragging, dragStart, scale],
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -147,16 +151,16 @@ export default function ImageFlyerCard({
   return (
     <>
       <div
-        className="group relative bg-card hover:shadow-lg transition-all duration-300 ease-out hover:-translate-y-1 rounded-xl border border-border/50 overflow-hidden cursor-pointer"
+        className="group relative bg-card hover:shadow-xl hover:shadow-black/3 dark:hover:shadow-black/15 transition-all duration-300 ease-out hover:-translate-y-1 rounded-xl border border-border/50 overflow-hidden cursor-pointer"
         onClick={() => setIsOpen(true)}
       >
-        <div className="p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-lg text-card-foreground leading-tight group-hover:text-primary transition-colors">
+        <div className="p-5 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="font-semibold text-base text-card-foreground leading-snug group-hover:text-primary transition-colors">
               {title}
             </h3>
             {dateRange && (
-              <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 whitespace-nowrap">
+              <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors border-transparent bg-secondary text-secondary-foreground whitespace-nowrap shrink-0">
                 {dateRange}
               </span>
             )}
@@ -166,23 +170,36 @@ export default function ImageFlyerCard({
             {description}
           </p>
 
-          <div className="pt-2 flex items-center text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
-            Click to view flyer →
+          <div className="pt-1 flex items-center gap-1.5 text-xs font-medium text-primary/70 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0 duration-300">
+            <span>Click to view</span>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
           </div>
         </div>
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-lg">
-          <div className="px-4 py-3 border-b flex items-center justify-start gap-4 bg-background/70 backdrop-blur-md z-10 sticky top-0">
-            <DialogTitle className="text-lg font-semibold tracking-tight text-foreground/90 truncate">
+        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-xl">
+          <div className="px-5 py-3.5 border-b border-border/60 flex items-center gap-3 bg-background/70 backdrop-blur-md z-10 sticky top-0">
+            <DialogTitle className="text-base font-semibold tracking-tight text-foreground/90 truncate flex-1">
               {title}
             </DialogTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full hover:bg-accent"
+                size="icon-sm"
+                className="hover:bg-accent"
                 onClick={handleZoomOut}
                 disabled={scale <= 0.5}
                 title="Zoom Out"
@@ -190,13 +207,13 @@ export default function ImageFlyerCard({
                 <ZoomOut className="h-4 w-4" />
                 <span className="sr-only">Zoom Out</span>
               </Button>
-              <div className="flex items-center justify-center min-w-[3rem] px-2 text-xs font-medium tabular-nums text-muted-foreground select-none">
+              <div className="flex items-center justify-center min-w-10 px-1.5 text-[11px] font-medium tabular-nums text-muted-foreground select-none">
                 {Math.round(scale * 100)}%
               </div>
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full hover:bg-accent"
+                size="icon-sm"
+                className="hover:bg-accent"
                 onClick={handleZoomIn}
                 disabled={scale >= 5}
                 title="Zoom In"
@@ -204,11 +221,11 @@ export default function ImageFlyerCard({
                 <ZoomIn className="h-4 w-4" />
                 <span className="sr-only">Zoom In</span>
               </Button>
-              <div className="w-px h-4 bg-border mx-1" />
+              <div className="w-px h-4 bg-border mx-0.5" />
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full hover:bg-accent"
+                size="icon-sm"
+                className="hover:bg-accent"
                 onClick={handleReset}
                 disabled={scale === 1 && position.x === 0 && position.y === 0}
                 title="Reset Zoom"
@@ -221,7 +238,7 @@ export default function ImageFlyerCard({
 
           <div
             ref={setContainerNode}
-            className="overflow-hidden h-[calc(100vh-9rem)] flex items-center justify-center bg-muted"
+            className="overflow-hidden h-[calc(100vh-9rem)] flex items-center justify-center bg-muted/50"
             // Native wheel listener attached in useEffect
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -230,7 +247,10 @@ export default function ImageFlyerCard({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            style={{ cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "default" }}
+            style={{
+              cursor:
+                scale > 1 ? (isDragging ? "grabbing" : "grab") : "default",
+            }}
           >
             {imageData ? (
               <img

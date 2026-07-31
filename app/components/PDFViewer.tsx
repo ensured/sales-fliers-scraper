@@ -4,7 +4,13 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { pdfjsLib } from "@/lib/pdfjs";
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 interface PDFViewerProps {
   file: string;
@@ -53,7 +59,7 @@ export default function PDFViewer({
       } catch (error) {
         console.error("Error loading PDF:", error);
         onError?.(
-          error instanceof Error ? error : new Error("Failed to load PDF")
+          error instanceof Error ? error : new Error("Failed to load PDF"),
         );
       }
     };
@@ -89,12 +95,10 @@ export default function PDFViewer({
         canvas.width = viewport.width;
 
         // Check if dark mode is enabled
-        const isDarkMode =
-          window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDarkMode = document.documentElement.classList.contains("dark");
 
         // Set canvas background based on theme
-        context.fillStyle = isDarkMode ? "#1f2937" : "#ffffff";
+        context.fillStyle = isDarkMode ? "#1a1a2e" : "#fafafa";
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         const renderContext = {
@@ -118,7 +122,7 @@ export default function PDFViewer({
         }
         console.error("Error rendering page:", error);
         onError?.(
-          error instanceof Error ? error : new Error("Failed to render page")
+          error instanceof Error ? error : new Error("Failed to render page"),
         );
       }
     };
@@ -191,7 +195,7 @@ export default function PDFViewer({
         setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
       }
     },
-    [viewScale, position]
+    [viewScale, position],
   );
 
   const handleMouseMove = useCallback(
@@ -203,7 +207,7 @@ export default function PDFViewer({
         });
       }
     },
-    [isDragging, dragStart, viewScale]
+    [isDragging, dragStart, viewScale],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -221,7 +225,7 @@ export default function PDFViewer({
         });
       }
     },
-    [viewScale, position]
+    [viewScale, position],
   );
 
   const handleTouchMove = useCallback(
@@ -234,7 +238,7 @@ export default function PDFViewer({
         });
       }
     },
-    [isDragging, dragStart, viewScale]
+    [isDragging, dragStart, viewScale],
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -259,7 +263,7 @@ export default function PDFViewer({
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
-              <span className="text-xs font-medium font-mono tabular-nums text-muted-foreground px-2 min-w-[3rem] text-center select-none">
+              <span className="text-xs font-medium font-mono tabular-nums text-foreground/80 px-2 min-w-12 text-center select-none">
                 {pageNumber} / {numPages}
               </span>
               <Button
@@ -286,7 +290,7 @@ export default function PDFViewer({
           >
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>
-          <div className="px-3 min-w-[3rem] text-center text-xs font-medium font-mono tabular-nums text-muted-foreground select-none">
+          <div className="px-3 min-w-12 text-center text-xs font-medium font-mono tabular-nums text-foreground/80 select-none">
             {Math.round(viewScale * 100)}%
           </div>
           <Button
@@ -313,7 +317,7 @@ export default function PDFViewer({
       {/* Canvas Container */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-900"
+        className="flex-1 overflow-hidden flex items-center justify-center bg-muted/40"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -322,7 +326,10 @@ export default function PDFViewer({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ cursor: viewScale > 1 ? (isDragging ? "grabbing" : "grab") : "default" }}
+        style={{
+          cursor:
+            viewScale > 1 ? (isDragging ? "grabbing" : "grab") : "default",
+        }}
       >
         <canvas
           ref={canvasRef}
