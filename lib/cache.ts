@@ -2,19 +2,24 @@ import fs from "fs";
 import path from "path";
 
 // Unified cache structure for all flyers
+// Every section carries its own `lastUpdated` timestamp so we can
+// revalidate by age (TTL), not only by URL/date-marker changes.
 export interface UnifiedCache {
   shopNKart?: {
     dateRange: string;
     flyerData: string;
+    lastUpdated?: string;
   };
   ion?: {
     dateRange: string;
     flyerData: string;
+    lastUpdated?: string;
   };
   marketOfChoice?: {
     pdfDate: string;
     dateRange: string;
     pdfData: string;
+    lastUpdated?: string;
   };
   ashlandCoop?: {
     pdfData: string | null;
@@ -34,6 +39,33 @@ export interface UnifiedCache {
     lastUpdated: string;
   };
   timestamp: string;
+}
+
+// How long a cached flyer is trusted before it is re-downloaded, even if its
+// URL/date marker hasn't changed. Stores frequently update a flyer in place
+// (same file, same date text on the page) mid-week, so age is the only
+// reliable way to pick up those updates.
+export const FLYER_CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+// True when a cached section has no timestamp or is older than the TTL.
+// Sections written before this fix (or corrupted to empty data) have no
+// timestamp, so they are treated as stale and refreshed on the next request.
+export function isSectionStale(
+  section: { lastUpdated?: string } | null | undefined,
+  ttlMs: number = FLYER_CACHE_TTL_MS
+): boolean {
+  if (!section) {
+    return true;
+  }
+  const lastUpdated = section.lastUpdated;
+  if (!lastUpdated) {
+    return true;
+  }
+  const updatedAt = new Date(lastUpdated).getTime();
+  if (Number.isNaN(updatedAt)) {
+    return true;
+  }
+  return Date.now() - updatedAt > ttlMs;
 }
 
 const CACHE_FILE = "flyers-cache.json";
@@ -82,11 +114,16 @@ export function saveCache(data: UnifiedCache): void {
 }
 
 // Update a specific section of the cache
+// Always stamps `lastUpdated` so TTL revalidation works for every section,
+// including ones (like shopNKart/ion) that don't set it themselves.
 export function updateCacheSection<K extends keyof UnifiedCache>(
   section: K,
   data: UnifiedCache[K]
 ): void {
   const cache = getCache() || { timestamp: "" };
+  if (data && typeof data === "object" && !("lastUpdated" in data)) {
+    (data as { lastUpdated: string }).lastUpdated = new Date().toISOString();
+  }
   cache[section] = data;
   cache.timestamp = new Date().toISOString();
   saveCache(cache);

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCache, updateCacheSection, UnifiedCache } from "@/lib/cache";
+import {
+  getCache,
+  updateCacheSection,
+  isSectionStale,
+} from "@/lib/cache";
 
 // Extract both dates from HTML content
 function extractDatesFromHtml(html: string): {
@@ -97,10 +101,17 @@ export async function POST() {
     // Fetch dates from page (single HTTP request)
     const { shopNKartDate, ionDate } = await checkDatesFromPage();
 
-    // Check what needs updating
+    // Update needed when the date marker changed, the section is too old
+    // (flyers are frequently updated in place, so age alone must trigger a
+    // re-download), or the cache holds no usable flyer data.
     const shopNKartNeedsUpdate =
-      !cachedShopNKart || cachedShopNKart.dateRange !== shopNKartDate;
-    const ionNeedsUpdate = !cachedIon || cachedIon.dateRange !== ionDate;
+      isSectionStale(cachedShopNKart) ||
+      !cachedShopNKart?.flyerData ||
+      (!!shopNKartDate && cachedShopNKart.dateRange !== shopNKartDate);
+    const ionNeedsUpdate =
+      isSectionStale(cachedIon) ||
+      !cachedIon?.flyerData ||
+      (!!ionDate && cachedIon.dateRange !== ionDate);
 
     console.log(
       "Shop N Kart needs update:",
@@ -112,39 +123,58 @@ export async function POST() {
     // Prepare response data from cache first
     let shopNKartData = cachedShopNKart?.flyerData || null;
     let ionData = cachedIon?.flyerData || null;
-    let shopNKartDateRange = cachedShopNKart?.dateRange || shopNKartDate;
-    let ionDateRange = cachedIon?.dateRange || ionDate;
+    let shopNKartDateRange =
+      cachedShopNKart?.dateRange || shopNKartDate || "";
+    let ionDateRange = cachedIon?.dateRange || ionDate || "";
 
     // Download Shop N Kart flyer if needed
+    let shopNKartDownloaded = false;
     if (shopNKartNeedsUpdate) {
       console.log("Downloading Shop N Kart flyer...");
-      shopNKartData = await downloadImage(
+      const fresh = await downloadImage(
         "https://ashlandshopnkart.com/index_htm_files/Ad%20Flyer.png"
       );
-      shopNKartDateRange = shopNKartDate;
-      // Update cache section
-      updateCacheSection("shopNKart", {
-        dateRange: shopNKartDateRange || "",
-        flyerData: shopNKartData || "",
-      });
-      console.log("Shop N Kart cache updated");
+      if (fresh) {
+        shopNKartData = fresh;
+        // If the date couldn't be extracted this time, keep the cached marker
+        // so we don't thrash the cache. Only a successful download updates it.
+        shopNKartDateRange = shopNKartDate || cachedShopNKart?.dateRange || "";
+        shopNKartDownloaded = true;
+        updateCacheSection("shopNKart", {
+          dateRange: shopNKartDateRange,
+          flyerData: fresh,
+        });
+        console.log("Shop N Kart cache updated");
+      } else {
+        // Never overwrite a good cached flyer with empty data on a transient
+        // failure - keep serving the last known good copy.
+        console.warn(
+          "Shop N Kart re-download failed; serving last good cache"
+        );
+      }
     } else {
       console.log("✓ Shop N Kart flyer - serving from cache");
     }
 
     // Download Ion flyer if needed
+    let ionDownloaded = false;
     if (ionNeedsUpdate) {
       console.log("Downloading Ion flyer...");
-      ionData = await downloadImage(
+      const fresh = await downloadImage(
         "https://ashlandshopnkart.com/index_htm_files/Ion%20Flyer.jpg"
       );
-      ionDateRange = ionDate;
-      // Update cache section
-      updateCacheSection("ion", {
-        dateRange: ionDateRange || "",
-        flyerData: ionData || "",
-      });
-      console.log("Ion cache updated");
+      if (fresh) {
+        ionData = fresh;
+        ionDateRange = ionDate || cachedIon?.dateRange || "";
+        ionDownloaded = true;
+        updateCacheSection("ion", {
+          dateRange: ionDateRange,
+          flyerData: fresh,
+        });
+        console.log("Ion cache updated");
+      } else {
+        console.warn("Ion re-download failed; serving last good cache");
+      }
     } else {
       console.log("✓ Ion flyer - serving from cache");
     }
@@ -158,13 +188,13 @@ export async function POST() {
       flyerFileName: "ashland-shop-n-kart-flyer.png",
       flyerUrl: "https://ashlandshopnkart.com/index_htm_files/Ad%20Flyer.png",
       dateRange: shopNKartDateRange,
-      shopNKartCached: !shopNKartNeedsUpdate,
+      shopNKartCached: !shopNKartDownloaded,
       // Ion flyer
       ionFlyerData: ionData,
       ionFileName: "Ion%20Flyer.jpg",
       ionUrl: "https://ashlandshopnkart.com/index_htm_files/Ion%20Flyer.jpg",
       ionDateRange: ionDateRange,
-      ionCached: !ionNeedsUpdate,
+      ionCached: !ionDownloaded,
     });
   } catch (error) {
     console.error("API error:", error);

@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# runtime flyer cache (populated by the scraper - never commit)
+/public/downloads/

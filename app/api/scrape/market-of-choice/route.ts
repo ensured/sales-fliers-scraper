@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCache, updateCacheSection } from "@/lib/cache";
+import { getCache, updateCacheSection, isSectionStale } from "@/lib/cache";
 
 // Extract date from PDF URL like: https://static.marketofchoice.com/uploads/2025/12/2025-12-05-MoC-Weekly-Specials.pdf
 function extractDateFromUrl(url: string): string | null {
@@ -126,9 +126,14 @@ export async function POST() {
     const currentPdfDate = await getCurrentPdfDate();
     console.log("Current PDF date:", currentPdfDate);
 
-    // Check if cache is still valid (same PDF date)
+    // Check if cache is still valid: stale by age (flyers are updated in
+    // place), date changed, or no usable cached PDF. A null currentPdfDate
+    // (HEAD check failed) also triggers an attempt; on failure the cache is
+    // kept, so transient outages never destroy the last good flyer.
     const needsUpdate =
-      !cachedMoc || !currentPdfDate || cachedMoc.pdfDate !== currentPdfDate;
+      isSectionStale(cachedMoc) ||
+      !cachedMoc?.pdfData ||
+      cachedMoc.pdfDate !== currentPdfDate;
 
     console.log("Needs update:", needsUpdate);
 

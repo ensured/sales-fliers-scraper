@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getCache, updateCacheSection, ensureDownloadsDir } from "@/lib/cache";
+import {
+  getCache,
+  updateCacheSection,
+  ensureDownloadsDir,
+  isSectionStale,
+} from "@/lib/cache";
 
 // Helper function to extract PDF links from HTML
 function extractPdfLinks(html: string): {
@@ -118,10 +123,18 @@ export async function POST() {
       ? extractFilename(nationalCoopLink)
       : null;
 
+    // Update needed when the flyer filename changed, the section is older
+    // than the TTL (flyers are sometimes replaced at the same filename), or
+    // the cache holds no usable data. Failed downloads keep the last good
+    // cached copy instead of overwriting it with nothing.
+    const cacheTooOld = isSectionStale(cachedCoop);
     const needsMainUpdate =
-      !cachedCoop?.pdfData || cachedCoop.pdfFileName !== mainFlyerFileName;
+      !cachedCoop?.pdfData ||
+      cacheTooOld ||
+      cachedCoop.pdfFileName !== mainFlyerFileName;
     const needsCoopUpdate =
       !cachedCoop?.nationalCoopPdfData ||
+      cacheTooOld ||
       cachedCoop.nationalCoopPdfFileName !== nationalCoopFileName;
 
     console.log(
