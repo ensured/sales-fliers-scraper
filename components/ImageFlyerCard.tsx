@@ -198,45 +198,11 @@ export default function ImageFlyerCard({
             <DialogTitle className="text-base font-semibold tracking-tight text-foreground/90 truncate flex-1">
               {title}
             </DialogTitle>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="hover:bg-accent"
-                onClick={handleZoomOut}
-                disabled={scale <= 0.5}
-                title="Zoom Out"
-              >
-                <ZoomOut className="h-4 w-4" />
-                <span className="sr-only">Zoom Out</span>
-              </Button>
-              <div className="flex items-center justify-center min-w-10 px-1.5 text-[11px] font-medium tabular-nums text-muted-foreground select-none">
-                {Math.round(scale * 100)}%
-              </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="hover:bg-accent"
-                onClick={handleZoomIn}
-                disabled={scale >= 5}
-                title="Zoom In"
-              >
-                <ZoomIn className="h-4 w-4" />
-                <span className="sr-only">Zoom In</span>
-              </Button>
-              <div className="w-px h-4 bg-border mx-0.5" />
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="hover:bg-accent"
-                onClick={handleReset}
-                disabled={scale === 1 && position.x === 0 && position.y === 0}
-                title="Reset Zoom"
-              >
-                <RotateCcw className="h-4 w-4" />
-                <span className="sr-only">Reset</span>
-              </Button>
-            </div>
+            {dateRange && (
+              <span className="text-[11px] font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-md shrink-0">
+                {dateRange}
+              </span>
+            )}
             <DialogClose asChild>
               <Button
                 variant="secondary"
@@ -252,7 +218,7 @@ export default function ImageFlyerCard({
 
           <div
             ref={setContainerNode}
-            className="overflow-hidden h-[calc(100vh-9rem)] flex items-center justify-center bg-muted/50"
+            className="relative overflow-hidden h-[calc(100vh-9rem)] flex items-center justify-center bg-muted/50"
             // Native wheel listener attached in useEffect
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -266,6 +232,61 @@ export default function ImageFlyerCard({
                 scale > 1 ? (isDragging ? "grabbing" : "grab") : "default",
             }}
           >
+            {/* Floating controls on the image itself - zoom left, Close right */}
+            <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 z-10 pointer-events-none">
+              <div className="pointer-events-auto flex items-center gap-1 bg-secondary/50 rounded-full p-1 border border-border/50 backdrop-blur-sm shadow-sm">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="hover:bg-accent"
+                  onClick={handleZoomOut}
+                  disabled={scale <= 0.5}
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                  <span className="sr-only">Zoom Out</span>
+                </Button>
+                <div className="flex items-center justify-center min-w-10 px-1.5 text-[11px] font-medium tabular-nums text-muted-foreground select-none">
+                  {Math.round(scale * 100)}%
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="hover:bg-accent"
+                  onClick={handleZoomIn}
+                  disabled={scale >= 5}
+                  title="Zoom In"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                  <span className="sr-only">Zoom In</span>
+                </Button>
+                <div className="w-px h-4 bg-border mx-0.5" />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="hover:bg-accent"
+                  onClick={handleReset}
+                  disabled={scale === 1 && position.x === 0 && position.y === 0}
+                  title="Reset Zoom"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span className="sr-only">Reset</span>
+                </Button>
+              </div>
+              <DialogClose asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="pointer-events-auto h-8 rounded-full gap-1 px-3 shadow-sm hover:bg-accent"
+                  aria-label="Close flyer"
+                  title="Close flyer (Esc)"
+                >
+                  <X className="h-4 w-4" />
+                  Close
+                </Button>
+              </DialogClose>
+            </div>
+
             {imageData ? (
               <img
                 src={imageData}
