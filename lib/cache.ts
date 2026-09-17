@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 
 // Unified cache structure for all flyers
@@ -68,23 +69,36 @@ export function isSectionStale(
   return Date.now() - updatedAt > ttlMs;
 }
 
+// The runtime flyer cache lives in a writable temp directory. On serverless
+// platforms (Vercel/Lambda) only /tmp is writable - the rest of the
+// filesystem is read-only, so writing under public/ throws ENOENT there and
+// breaks requests. A cache is ephemeral by nature, so per-instance /tmp is
+// exactly right; set FLYER_CACHE_DIR to override the location if needed.
+const CACHE_DIR =
+  process.env.FLYER_CACHE_DIR || path.join(os.tmpdir(), "sales-fliers-cache");
+
 const CACHE_FILE = "flyers-cache.json";
 
 // Get cache file path
 export function getCachePath(): string {
-  return path.join(process.cwd(), "public", "downloads", CACHE_FILE);
+  return path.join(CACHE_DIR, CACHE_FILE);
 }
 
-// Get the downloads directory path
+// Get the cache directory path
 export function getDownloadsDir(): string {
-  return path.join(process.cwd(), "public", "downloads");
+  return CACHE_DIR;
 }
 
-// Ensure downloads directory exists
+// Ensure cache directory exists. Never throws: on read-only filesystems the
+// app simply runs without persistence instead of failing the request.
 export function ensureDownloadsDir(): void {
-  const dir = getDownloadsDir();
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    const dir = getDownloadsDir();
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (error) {
+    console.error("Failed to create cache directory:", error);
   }
 }
 
