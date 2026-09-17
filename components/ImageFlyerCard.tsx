@@ -239,13 +239,13 @@ export default function ImageFlyerCard({
             </div>
             <DialogClose asChild>
               <Button
-                variant="outline"
-                size="icon-sm"
-                className="h-8 w-8 shrink-0 rounded-full hover:bg-accent"
+                variant="secondary"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full shadow-sm hover:bg-accent"
                 aria-label="Close flyer"
                 title="Close (Esc)"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             </DialogClose>
           </div>
