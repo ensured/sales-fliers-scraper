@@ -166,6 +166,19 @@ export default function HomeContent() {
     return `${remainingMinutes}m until refresh`;
   };
 
+  // A successful flyer result is "fresh" until its recorded server timestamp
+  // is older than the TTL. Error results are never fresh so they get retried.
+  const isResultFresh = (result: ScrapeResult | null) => {
+    if (!result?.success || !result.timestamp) {
+      return false;
+    }
+    const fetchedAt = new Date(result.timestamp).getTime();
+    if (Number.isNaN(fetchedAt)) {
+      return false;
+    }
+    return Date.now() - fetchedAt <= FLYER_CACHE_TTL_MS;
+  };
+
   const loadStoreFlyers = async (store: StoreKey) => {
     const currentResult =
       store === "food-coop"
@@ -174,7 +187,8 @@ export default function HomeContent() {
           ? shopNKartResult
           : marketOfChoiceResult;
 
-    if (currentResult) {
+    // Fresh in-memory result: nothing to do.
+    if (currentResult && isResultFresh(currentResult)) {
       applyStoreResult(store, currentResult);
       setLastUpdatedLabel(formatLastUpdated(currentResult.timestamp));
       setRefreshCountdown(formatRefreshCountdown(currentResult.timestamp));
@@ -183,13 +197,18 @@ export default function HomeContent() {
 
     setIsLoadingFlyers(true);
 
-    const cachedResult = getCachedResult(store);
-    if (cachedResult) {
-      applyStoreResult(store, cachedResult);
-      setLastUpdatedLabel(formatLastUpdated(cachedResult.timestamp));
-      setRefreshCountdown(formatRefreshCountdown(cachedResult.timestamp));
-      setIsLoadingFlyers(false);
-      return;
+    // A stale/missing result is re-fetched from the server, so flyer updates
+    // show up instead of serving the same cached copy forever. Fall back to
+    // localStorage only when we have nothing at all in memory.
+    if (!currentResult) {
+      const cachedResult = getCachedResult(store);
+      if (cachedResult) {
+        applyStoreResult(store, cachedResult);
+        setLastUpdatedLabel(formatLastUpdated(cachedResult.timestamp));
+        setRefreshCountdown(formatRefreshCountdown(cachedResult.timestamp));
+        setIsLoadingFlyers(false);
+        return;
+      }
     }
 
     try {
@@ -231,16 +250,20 @@ export default function HomeContent() {
         setCachedResult(store, result);
       }
     } catch (error) {
-      const fallbackError: ScrapeResult = {
-        success: false,
-        message: "Failed to connect",
-        timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      // Keep showing the last known flyer if a re-fetch fails - only replace
+      // it with an error screen when we have nothing to show at all.
+      if (!currentResult) {
+        const fallbackError: ScrapeResult = {
+          success: false,
+          message: "Failed to connect",
+          timestamp: new Date().toISOString(),
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
 
-      applyStoreResult(store, fallbackError);
-      setLastUpdatedLabel(formatLastUpdated(fallbackError.timestamp));
-      setRefreshCountdown(formatRefreshCountdown(fallbackError.timestamp));
+        applyStoreResult(store, fallbackError);
+        setLastUpdatedLabel(formatLastUpdated(fallbackError.timestamp));
+        setRefreshCountdown(formatRefreshCountdown(fallbackError.timestamp));
+      }
     } finally {
       setIsLoadingFlyers(false);
     }
