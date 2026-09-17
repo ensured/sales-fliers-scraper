@@ -3,12 +3,13 @@
 import { useState } from "react";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import PDFViewer from "@/app/components/PDFViewer";
 import { Button } from "./ui/button";
+import { X } from "lucide-react";
 
 interface FlyerCardProps {
   title: string;
@@ -209,7 +210,10 @@ export default function FlyerCard({
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-xl">
+        <DialogContent
+          showCloseButton={false}
+          className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-xl"
+        >
           <div className="px-5 py-3.5 border-b border-border/60 flex items-center gap-4 bg-background/70 backdrop-blur-md z-10 sticky top-0">
             <DialogTitle className="text-base font-semibold tracking-tight text-foreground/90 truncate flex-1">
               {title}
@@ -219,6 +223,17 @@ export default function FlyerCard({
                 {extractedDate}
               </span>
             )}
+            <DialogClose asChild>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="h-8 w-8 shrink-0 rounded-full hover:bg-accent"
+                aria-label="Close flyer"
+                title="Close (Esc)"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogClose>
           </div>
           <div className="h-[calc(100vh-10rem)]">
             {pdfData ? (

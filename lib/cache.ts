@@ -25,10 +25,7 @@ export interface UnifiedCache {
   ashlandCoop?: {
     pdfData: string | null;
     pdfFileName: string | null;
-    nationalCoopPdfData: string | null;
-    nationalCoopPdfFileName: string | null;
     mainFlyerLink: string | null;
-    nationalCoopLink: string | null;
     lastUpdated: string;
   };
   albertsons?: {

@@ -4,71 +4,7 @@ import {
   updateCacheSection,
   isSectionStale,
 } from "@/lib/cache";
-
-// Extract both dates from HTML content
-function extractDatesFromHtml(html: string): {
-  shopNKartDate: string | null;
-  ionDate: string | null;
-} {
-  // Shop N Kart weekly date: "December 3-9 2025"
-  const weeklyPattern =
-    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})-(\d{1,2})\s+(\d{4})/i;
-  const weeklyMatch = html.match(weeklyPattern);
-  let shopNKartDate = null;
-  if (weeklyMatch) {
-    const [, month, startDay, endDay] = weeklyMatch;
-    const monthAbbr = month.slice(0, 3);
-    shopNKartDate = `${monthAbbr} ${startDay} – ${monthAbbr} ${endDay}`;
-  }
-
-  // Ion monthly date: "December 2025" from xr_s36 span
-  const monthlyPattern =
-    /<span class="Normal_text xr_s36"[^>]*>([A-Za-z]+\s+\d{4})<\/span>/;
-  const monthlyMatch = html.match(monthlyPattern);
-  let ionDate = monthlyMatch ? monthlyMatch[1] : null;
-
-  // Fallback for ion date
-  if (!ionDate) {
-    const fallbackPattern =
-      /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}/g;
-    const allMatches = html.match(fallbackPattern);
-    if (allMatches && allMatches.length > 0) {
-      ionDate = allMatches[allMatches.length - 1];
-    }
-  }
-
-  return { shopNKartDate, ionDate };
-}
-
-// Fetch page and extract both dates
-async function checkDatesFromPage(): Promise<{
-  shopNKartDate: string | null;
-  ionDate: string | null;
-}> {
-  try {
-    console.log("Fetching dates from ashlandshopnkart.com...");
-    const response = await fetch("https://ashlandshopnkart.com/", {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return { shopNKartDate: null, ionDate: null };
-    }
-
-    const html = await response.text();
-    const dates = extractDatesFromHtml(html);
-    console.log(
-      "Extracted dates - Shop N Kart:",
-      dates.shopNKartDate,
-      "| Ion:",
-      dates.ionDate
-    );
-    return dates;
-  } catch (error) {
-    console.error("Failed to check dates:", error);
-    return { shopNKartDate: null, ionDate: null };
-  }
-}
+import { probeShopNKart } from "@/lib/probes";
 
 // Download image and return as base64
 async function downloadImage(url: string): Promise<string | null> {
@@ -99,7 +35,7 @@ export async function POST() {
     console.log("Cache status:", cache ? "exists" : "empty");
 
     // Fetch dates from page (single HTTP request)
-    const { shopNKartDate, ionDate } = await checkDatesFromPage();
+    const { shopNKartDate, ionDate } = await probeShopNKart();
 
     // Update needed when the date marker changed, the section is too old
     // (flyers are frequently updated in place, so age alone must trigger a
