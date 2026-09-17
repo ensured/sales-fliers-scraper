@@ -3,12 +3,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "./ui/button";
-import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, X } from "lucide-react";
 
 interface ImageFlyerCardProps {
   title: string;
@@ -190,7 +190,10 @@ export default function ImageFlyerCard({
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-xl">
+        <DialogContent
+          showCloseButton={false}
+          className="w-screen h-[calc(100vh-2rem)] max-w-none gap-0! my-3 overflow-hidden p-0! flex flex-col bg-background/95 backdrop-blur-sm border-none shadow-2xl rounded-xl"
+        >
           <div className="px-5 py-3.5 border-b border-border/60 flex items-center gap-3 bg-background/70 backdrop-blur-md z-10 sticky top-0">
             <DialogTitle className="text-base font-semibold tracking-tight text-foreground/90 truncate flex-1">
               {title}
@@ -234,6 +237,17 @@ export default function ImageFlyerCard({
                 <span className="sr-only">Reset</span>
               </Button>
             </div>
+            <DialogClose asChild>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="h-8 w-8 shrink-0 rounded-full hover:bg-accent"
+                aria-label="Close flyer"
+                title="Close (Esc)"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogClose>
           </div>
 
           <div

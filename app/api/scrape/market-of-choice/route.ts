@@ -1,15 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCache, updateCacheSection, isSectionStale } from "@/lib/cache";
-
-// Extract date from PDF URL like: https://static.marketofchoice.com/uploads/2025/12/2025-12-05-MoC-Weekly-Specials.pdf
-function extractDateFromUrl(url: string): string | null {
-  // Match pattern: YYYY-MM-DD in the filename
-  const match = url.match(/(\d{4}-\d{2}-\d{2})-MoC/);
-  if (match) {
-    return match[1]; // Returns e.g., "2025-12-05"
-  }
-  return null;
-}
+import { probeMarketOfChoice, extractMoCDateFromUrl } from "@/lib/probes";
 
 // Calculate a 7-day date range string from a YYYY-MM-DD date
 // e.g., "2025-12-05" -> "Dec 5 – Dec 11, 2025"
@@ -43,27 +34,6 @@ function calculateDateRange(pdfDate: string): string {
 }
 
 // Check the current PDF date without downloading the full file
-async function getCurrentPdfDate(): Promise<string | null> {
-  try {
-    console.log("Checking current PDF date...");
-    const response = await fetch(
-      "https://marketofchoice.com/download-weekly-specials",
-      {
-        method: "HEAD",
-        redirect: "follow",
-      }
-    );
-
-    if (response.ok) {
-      const finalUrl = response.url;
-      console.log("Current PDF URL:", finalUrl);
-      return extractDateFromUrl(finalUrl);
-    }
-  } catch (error) {
-    console.error("Failed to check PDF date:", error);
-  }
-  return null;
-}
 
 // Download PDF and calculate date range from URL date
 async function downloadPdf(): Promise<{
@@ -85,7 +55,7 @@ async function downloadPdf(): Promise<{
       const finalUrl = response.url;
       console.log("Final PDF URL:", finalUrl);
 
-      const pdfDate = extractDateFromUrl(finalUrl);
+      const pdfDate = extractMoCDateFromUrl(finalUrl);
       console.log("Extracted PDF date from URL:", pdfDate);
 
       const buffer = Buffer.from(await response.arrayBuffer());
@@ -122,9 +92,8 @@ export async function POST() {
     console.log("Cache status:", cache ? "exists" : "empty");
     console.log("Cached PDF date:", cachedMoc?.pdfDate);
 
-    // Check current PDF date from the redirect URL
-    const currentPdfDate = await getCurrentPdfDate();
-    console.log("Current PDF date:", currentPdfDate);
+    // Check current PDF date from the redirect URL (cheap HEAD request)
+    const { pdfDate: currentPdfDate } = await probeMarketOfChoice();    console.log("Current PDF date:", currentPdfDate);
 
     // Check if cache is still valid: stale by age (flyers are updated in
     // place), date changed, or no usable cached PDF. A null currentPdfDate

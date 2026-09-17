@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import ShoppingList from "@/app/components/ShoppingList";
+import { idbGet, idbSet } from "@/lib/idb";
 
 interface ScrapeResult {
   success: boolean;
@@ -16,9 +17,7 @@ interface ScrapeResult {
   error?: string;
   pdfData?: string;
   pdfFileName?: string;
-  nationalCoopPdfData?: string;
-  nationalCoopPdfFileName?: string;
-  nationalCoopLink?: string;
+  pdfDate?: string;
   mainFlyerLink?: string;
   // Shop N Kart specific fields
   flyerData?: string;
@@ -34,8 +33,24 @@ interface ScrapeResult {
 
 type StoreKey = "food-coop" | "shop-n-kart" | "market-of-choice";
 
+const STORES: StoreKey[] = ["food-coop", "shop-n-kart", "market-of-choice"];
+
+const ACTIVE_STORE_KEYS: Record<string, StoreKey> = {
+  "ashland-food-coop": "food-coop",
+  "shop-n-kart": "shop-n-kart",
+  "market-of-choice": "market-of-choice",
+};
+
 const FLYER_CACHE_TTL_MS = 4 * 60 * 60 * 1000;
 const flyerCache = new Map<StoreKey, { savedAt: number; data: ScrapeResult }>();
+
+// Shape returned by /api/scrape/check - just the current version markers
+// (date strings / PDF filenames), no flyer data.
+interface FlyerCheck {
+  shopNKart: { dateRange: string | null; ionDateRange: string | null };
+  marketOfChoice: { pdfDate: string | null };
+  ashlandCoop: { mainFlyerFileName: string | null };
+}
 
 export default function HomeContent() {
   const [activeStoreTab, setActiveStoreTab] = useState("ashland-food-coop");
@@ -50,10 +65,23 @@ export default function HomeContent() {
     useState<ScrapeResult | null>(null);
   const [lastUpdatedLabel, setLastUpdatedLabel] = useState<string | null>(null);
   const [refreshCountdown, setRefreshCountdown] = useState<string | null>(null);
+  // Whether each store's visible flyer came from the local cache (vs a fresh
+  // server fetch) - used for the "(from cache)" hint in the header.
+  const [cachedSource, setCachedSource] = useState<
+    Partial<Record<StoreKey, "cache" | "fresh">>
+  >({});
 
   const getCacheKey = (store: StoreKey) => `flyers-cache:${store}`;
 
-  const getCachedResult = (store: StoreKey) => {
+  const resultFor = (store: StoreKey): ScrapeResult | null => {
+    if (store === "food-coop") return foodCoopResult;
+    if (store === "shop-n-kart") return shopNKartResult;
+    return marketOfChoiceResult;
+  };
+
+  // Read the persisted cache: in-memory Map first, then IndexedDB (which can
+  // hold the large flyer payloads that overflow localStorage).
+  const getCachedResult = async (store: StoreKey) => {
     const memoryCached = flyerCache.get(store);
     if (
       memoryCached &&
@@ -66,49 +94,33 @@ export default function HomeContent() {
       flyerCache.delete(store);
     }
 
-    if (typeof window === "undefined") {
-      return null;
-    }
-
     try {
-      const cachedItem = window.localStorage.getItem(getCacheKey(store));
+      const cachedItem = await idbGet<{
+        savedAt: number;
+        data: ScrapeResult;
+      }>(getCacheKey(store));
       if (!cachedItem) {
         return null;
       }
 
-      const parsed = JSON.parse(cachedItem) as {
-        savedAt: number;
-        data: ScrapeResult;
-      };
-
-      if (Date.now() - parsed.savedAt > FLYER_CACHE_TTL_MS) {
-        window.localStorage.removeItem(getCacheKey(store));
+      if (Date.now() - cachedItem.savedAt > FLYER_CACHE_TTL_MS) {
         return null;
       }
 
-      flyerCache.set(store, { savedAt: parsed.savedAt, data: parsed.data });
-      return parsed.data;
+      flyerCache.set(store, {
+        savedAt: cachedItem.savedAt,
+        data: cachedItem.data,
+      });
+      return cachedItem.data;
     } catch {
       return null;
     }
   };
 
-  const setCachedResult = (store: StoreKey, result: ScrapeResult) => {
+  const setCachedResult = async (store: StoreKey, result: ScrapeResult) => {
     const cacheEntry = { savedAt: Date.now(), data: result };
     flyerCache.set(store, cacheEntry);
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(
-        getCacheKey(store),
-        JSON.stringify(cacheEntry),
-      );
-    } catch {
-      // Ignore storage failures so the app can keep working.
-    }
+    await idbSet(getCacheKey(store), cacheEntry);
   };
 
   const applyStoreResult = (store: StoreKey, result: ScrapeResult | null) => {
@@ -166,8 +178,8 @@ export default function HomeContent() {
     return `${remainingMinutes}m until refresh`;
   };
 
-  // A successful flyer result is "fresh" until its recorded server timestamp
-  // is older than the TTL. Error results are never fresh so they get retried.
+  // A successful flyer result is "fresh" until its recorded timestamp is
+  // older than the TTL. Error results are never fresh so they get retried.
   const isResultFresh = (result: ScrapeResult | null) => {
     if (!result?.success || !result.timestamp) {
       return false;
@@ -179,138 +191,181 @@ export default function HomeContent() {
     return Date.now() - fetchedAt <= FLYER_CACHE_TTL_MS;
   };
 
-  const loadStoreFlyers = async (store: StoreKey) => {
-    const currentResult =
-      store === "food-coop"
-        ? foodCoopResult
-        : store === "shop-n-kart"
-          ? shopNKartResult
-          : marketOfChoiceResult;
+  const paintResult = (
+    store: StoreKey,
+    result: ScrapeResult,
+    source: "cache" | "fresh",
+  ) => {
+    applyStoreResult(store, result);
+    setLastUpdatedLabel(formatLastUpdated(result.timestamp));
+    setRefreshCountdown(formatRefreshCountdown(result.timestamp));
+    setCachedSource((prev) => ({ ...prev, [store]: source }));
+  };
 
-    // Fresh in-memory result: nothing to do.
-    if (currentResult && isResultFresh(currentResult)) {
-      applyStoreResult(store, currentResult);
-      setLastUpdatedLabel(formatLastUpdated(currentResult.timestamp));
-      setRefreshCountdown(formatRefreshCountdown(currentResult.timestamp));
+  // Do the cached flyer's markers match what's live right now? A null marker
+  // from the probe means we couldn't find it on the store's page (temporarily
+  // removed, page structure changed, or a transient fetch failure). Null is
+  // treated as "unknown" so we keep the cached copy instead of re-downloading
+  // on every visit; the TTL still catches genuine in-place updates.
+  const flyerMarkersMatch = (
+    store: StoreKey,
+    check: FlyerCheck,
+    result: ScrapeResult,
+  ) => {
+    if (store === "food-coop") {
+      const main = check.ashlandCoop.mainFlyerFileName;
+      return (
+        main === null || (result.pdfFileName ?? null) === main
+      );
+    }
+    if (store === "shop-n-kart") {
+      return (
+        (check.shopNKart.dateRange === null ||
+          (result.dateRange ?? null) === check.shopNKart.dateRange) &&
+        (check.shopNKart.ionDateRange === null ||
+          (result.ionDateRange ?? null) === check.shopNKart.ionDateRange)
+      );
+    }
+    return (
+      check.marketOfChoice.pdfDate === null ||
+      (result.pdfDate ?? null) === check.marketOfChoice.pdfDate
+    );
+  };
+
+  // Cheap "is there a new flyer?" probe - returns current markers only.
+  const fetchFlyerCheck = async (): Promise<FlyerCheck | null> => {
+    try {
+      const response = await fetch("/api/scrape/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const data = await response.json();
+      return data.success ? (data as FlyerCheck) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const fetchStoreData = async (store: StoreKey): Promise<ScrapeResult> => {
+    if (store === "food-coop") {
+      const response = await fetch(
+        `/api/scrape/ashland-coop?t=${Date.now()}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+        },
+      );
+      return await response.json();
+    }
+    if (store === "shop-n-kart") {
+      const response = await fetch(
+        `/api/scrape/shop-n-kart?t=${Date.now()}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+        },
+      );
+      return await response.json();
+    }
+    const response = await fetch(
+      `/api/scrape/market-of-choice?t=${Date.now()}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      },
+    );
+    return await response.json();
+  };
+
+  // Ensure a store's flyer is current. Skip the server entirely when the
+  // cached copy is fresh and (when a check is available) still matches the
+  // live markers. Download the full flyer only when it actually changed,
+  // the cache is missing, or it's older than the TTL.
+  const loadStoreFlyers = async (
+    store: StoreKey,
+    check?: FlyerCheck | null,
+  ) => {
+    const current = resultFor(store);
+
+    // Fast path: fresh in-memory result that still matches the markers we
+    // were given (or no check supplied = plain tab switch) - nothing to
+    // download. A null/absent check skips the marker comparison.
+    if (
+      current &&
+      isResultFresh(current) &&
+      (check === undefined || (check && flyerMarkersMatch(store, check, current)))
+    ) {
+      paintResult(
+        store,
+        current,
+        cachedSource[store] ?? "cache",
+      );
       return;
     }
 
     setIsLoadingFlyers(true);
+    try {
+      const base = current ?? (await getCachedResult(store));
+      const resolvedCheck =
+        check !== undefined ? check : await fetchFlyerCheck();
+      const sameVersion =
+        !!base &&
+        isResultFresh(base) &&
+        (!resolvedCheck || flyerMarkersMatch(store, resolvedCheck, base));
 
-    // A stale/missing result is re-fetched from the server, so flyer updates
-    // show up instead of serving the same cached copy forever. Fall back to
-    // localStorage only when we have nothing at all in memory.
-    if (!currentResult) {
-      const cachedResult = getCachedResult(store);
-      if (cachedResult) {
-        applyStoreResult(store, cachedResult);
-        setLastUpdatedLabel(formatLastUpdated(cachedResult.timestamp));
-        setRefreshCountdown(formatRefreshCountdown(cachedResult.timestamp));
-        setIsLoadingFlyers(false);
+      if (sameVersion) {
+        paintResult(store, base, "cache");
         return;
       }
-    }
 
-    try {
-      let result: ScrapeResult;
-
-      if (store === "food-coop") {
-        const response = await fetch("/api/scrape/ashland-coop", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        result = await response.json();
-      } else if (store === "shop-n-kart") {
-        const response = await fetch(
-          `/api/scrape/shop-n-kart?t=${Date.now()}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            cache: "no-store",
-          },
-        );
-        result = await response.json();
+      const fresh = await fetchStoreData(store);
+      if (fresh.success) {
+        paintResult(store, fresh, "fresh");
+        void setCachedResult(store, fresh);
+      } else if (base) {
+        // Server had a problem; keep showing the last known good flyer.
+        paintResult(store, base, "cache");
       } else {
-        const response = await fetch(
-          `/api/scrape/market-of-choice?t=${Date.now()}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            cache: "no-store",
-          },
-        );
-        result = await response.json();
-      }
-
-      applyStoreResult(store, result);
-      setLastUpdatedLabel(formatLastUpdated(result.timestamp));
-      setRefreshCountdown(formatRefreshCountdown(result.timestamp));
-
-      if (result.success) {
-        setCachedResult(store, result);
+        paintResult(store, fresh, "fresh");
       }
     } catch (error) {
-      // Keep showing the last known flyer if a re-fetch fails - only replace
-      // it with an error screen when we have nothing to show at all.
-      if (!currentResult) {
+      // Only surface an error screen when there's nothing cached at all.
+      if (!resultFor(store)) {
         const fallbackError: ScrapeResult = {
           success: false,
           message: "Failed to connect",
           timestamp: new Date().toISOString(),
           error: error instanceof Error ? error.message : "Unknown error",
         };
-
-        applyStoreResult(store, fallbackError);
-        setLastUpdatedLabel(formatLastUpdated(fallbackError.timestamp));
-        setRefreshCountdown(formatRefreshCountdown(fallbackError.timestamp));
+        paintResult(store, fallbackError, "fresh");
       }
     } finally {
       setIsLoadingFlyers(false);
     }
   };
 
-  // Auto-load all stores on mount
+  // Auto-load all stores on mount: paint whatever is cached instantly, then
+  // run one cheap marker check and download only what changed.
   useEffect(() => {
     const loadAll = async () => {
       setIsLoadingFlyers(true);
       try {
-        const [foodCoopResponse, shopNKartResponse, marketOfChoiceResponse] =
-          await Promise.all([
-            fetch("/api/scrape/ashland-coop", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            }),
-            fetch(`/api/scrape/shop-n-kart?t=${Date.now()}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              cache: "no-store",
-            }),
-            fetch(`/api/scrape/market-of-choice?t=${Date.now()}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              cache: "no-store",
-            }),
-          ]);
+        const cached = await Promise.all(STORES.map(getCachedResult));
+        cached.forEach((result, i) => {
+          if (result) {
+            paintResult(STORES[i], result, "cache");
+          }
+        });
 
-        const [foodCoopData, shopNKartData, marketOfChoiceData] =
-          await Promise.all([
-            foodCoopResponse.json(),
-            shopNKartResponse.json(),
-            marketOfChoiceResponse.json(),
-          ]);
-
-        applyStoreResult("food-coop", foodCoopData);
-        applyStoreResult("shop-n-kart", shopNKartData);
-        applyStoreResult("market-of-choice", marketOfChoiceData);
-
-        if (foodCoopData.success) setCachedResult("food-coop", foodCoopData);
-        if (shopNKartData.success)
-          setCachedResult("shop-n-kart", shopNKartData);
-        if (marketOfChoiceData.success)
-          setCachedResult("market-of-choice", marketOfChoiceData);
-
-        setLastUpdatedLabel(formatLastUpdated(foodCoopData.timestamp));
-        setRefreshCountdown(formatRefreshCountdown(foodCoopData.timestamp));
+        const check = await fetchFlyerCheck();
+        await Promise.all(STORES.map((s) => loadStoreFlyers(s, check)));
       } catch (error) {
         const fallbackError: ScrapeResult = {
           success: false,
@@ -318,10 +373,11 @@ export default function HomeContent() {
           timestamp: new Date().toISOString(),
           error: error instanceof Error ? error.message : "Unknown error",
         };
-
-        applyStoreResult("food-coop", fallbackError);
-        applyStoreResult("shop-n-kart", fallbackError);
-        applyStoreResult("market-of-choice", fallbackError);
+        STORES.forEach((store) => {
+          if (!resultFor(store)) {
+            paintResult(store, fallbackError, "fresh");
+          }
+        });
         setLastUpdatedLabel(formatLastUpdated(fallbackError.timestamp));
         setRefreshCountdown(formatRefreshCountdown(fallbackError.timestamp));
       } finally {
@@ -333,9 +389,33 @@ export default function HomeContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // After switching to a store that's only showing cached data, quietly
+  // re-validate it in the background: cheap marker check, and only download
+  // the full flyer if a new version actually appeared.
+  useEffect(() => {
+    const store = ACTIVE_STORE_KEYS[activeStoreTab];
+    const current = resultFor(store);
+    if (
+      !current ||
+      !isResultFresh(current) ||
+      cachedSource[store] !== "cache"
+    ) {
+      return;
+    }
+    // Defer so the effect itself never sets state synchronously.
+    const timer = setTimeout(() => {
+      void loadStoreFlyers(store, null);
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStoreTab]);
+
   function onPdfError(error: Error): void {
     console.error("PDF rendering error:", error);
   }
+
+  const activeStoreKey = ACTIVE_STORE_KEYS[activeStoreTab];
+  const showingFromCache = cachedSource[activeStoreKey] === "cache";
 
   return (
     <div className="min-h-screen py-8 px-3 sm:px-6 lg:px-8">
@@ -415,6 +495,7 @@ export default function HomeContent() {
                     {lastUpdatedLabel && (
                       <span className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">
                         {lastUpdatedLabel}
+                        {showingFromCache ? " · from cache" : ""}
                       </span>
                     )}
                     {refreshCountdown && (
@@ -429,13 +510,7 @@ export default function HomeContent() {
                   value={activeStoreTab}
                   onValueChange={(value) => {
                     setActiveStoreTab(value);
-                    if (value === "ashland-food-coop") {
-                      void loadStoreFlyers("food-coop");
-                    } else if (value === "shop-n-kart") {
-                      void loadStoreFlyers("shop-n-kart");
-                    } else {
-                      void loadStoreFlyers("market-of-choice");
-                    }
+                    void loadStoreFlyers(ACTIVE_STORE_KEYS[value]);
                   }}
                   className="flex flex-col"
                 >
@@ -467,31 +542,16 @@ export default function HomeContent() {
                         <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                           {foodCoopResult.error}
                         </div>
-                      ) : foodCoopResult?.pdfData ||
-                        foodCoopResult?.nationalCoopPdfData ? (
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          {foodCoopResult.pdfData && (
-                            <FlyerCard
-                              title="Ashland Food Coop Flyer"
-                              description="Main weekly sales flyer from Ashland Food Coop"
-                              pdfData={foodCoopResult.pdfData}
-                              pdfFileName={foodCoopResult.pdfFileName}
-                              url={foodCoopResult.mainFlyerLink}
-                              onPdfError={onPdfError}
-                            />
-                          )}
-                          {foodCoopResult.nationalCoopPdfData && (
-                            <FlyerCard
-                              title="National Co-op Grocers"
-                              description="National co-op deals and special offers"
-                              pdfData={foodCoopResult.nationalCoopPdfData}
-                              pdfFileName={
-                                foodCoopResult.nationalCoopPdfFileName
-                              }
-                              url={foodCoopResult.nationalCoopLink}
-                              onPdfError={onPdfError}
-                            />
-                          )}
+                      ) : foodCoopResult?.pdfData ? (
+                        <div className="grid grid-cols-1 gap-4">
+                          <FlyerCard
+                            title="Ashland Food Coop Flyer"
+                            description="Main weekly sales flyer from Ashland Food Coop"
+                            pdfData={foodCoopResult.pdfData}
+                            pdfFileName={foodCoopResult.pdfFileName}
+                            url={foodCoopResult.mainFlyerLink}
+                            onPdfError={onPdfError}
+                          />
                         </div>
                       ) : (
                         <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">

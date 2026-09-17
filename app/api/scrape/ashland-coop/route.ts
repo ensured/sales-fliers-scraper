@@ -5,45 +5,7 @@ import {
   ensureDownloadsDir,
   isSectionStale,
 } from "@/lib/cache";
-
-// Helper function to extract PDF links from HTML
-function extractPdfLinks(html: string): {
-  mainFlyerLink: string | null;
-  nationalCoopLink: string | null;
-} {
-  const BASE_URL = "https://ashlandfood.coop";
-
-  // Main flyer is in /sites/default/files/sales-flyers/
-  // Can be absolute or relative URL
-  const mainFlyerMatch = html.match(
-    /href="((?:https:\/\/ashlandfood\.coop)?\/sites\/default\/files\/sales-flyers\/[^"]+\.pdf)"/i
-  );
-  let mainFlyerLink = mainFlyerMatch ? mainFlyerMatch[1] : null;
-  // Convert relative to absolute
-  if (mainFlyerLink && !mainFlyerLink.startsWith("http")) {
-    mainFlyerLink = BASE_URL + mainFlyerLink;
-  }
-
-  // National Co-op flyer is in /sites/default/files/documents/
-  // Can be absolute or relative URL
-  const coopMatch = html.match(
-    /href="((?:https:\/\/ashlandfood\.coop)?\/sites\/default\/files\/documents\/[^"]*Co(?:\+|%2B)op[^"]*\.pdf)"/i
-  );
-  let nationalCoopLink = coopMatch ? coopMatch[1] : null;
-  // Convert relative to absolute
-  if (nationalCoopLink && !nationalCoopLink.startsWith("http")) {
-    nationalCoopLink = BASE_URL + nationalCoopLink;
-  }
-
-  console.log("Extracted PDF links:", { mainFlyerLink, nationalCoopLink });
-  return { mainFlyerLink, nationalCoopLink };
-}
-
-// Extract filename from URL
-function extractFilename(url: string): string {
-  const urlFileName = url.split("/").pop() || "flyer.pdf";
-  return decodeURIComponent(urlFileName);
-}
+import { probeAshlandCoop } from "@/lib/probes";
 
 // Download PDF and return as base64
 async function downloadPdf(url: string): Promise<string | null> {
@@ -67,10 +29,7 @@ function createResponse(
   message: string,
   pdfData?: string | null,
   pdfFileName?: string | null,
-  nationalCoopPdfData?: string | null,
-  nationalCoopPdfFileName?: string | null,
   mainFlyerLink?: string | null,
-  nationalCoopLink?: string | null,
   error?: string
 ) {
   return NextResponse.json(
@@ -80,12 +39,7 @@ function createResponse(
       timestamp: new Date().toISOString(),
       pdfData: pdfData ? `data:application/pdf;base64,${pdfData}` : null,
       pdfFileName,
-      nationalCoopPdfData: nationalCoopPdfData
-        ? `data:application/pdf;base64,${nationalCoopPdfData}`
-        : null,
-      nationalCoopPdfFileName,
       mainFlyerLink,
-      nationalCoopLink,
       error,
     },
     error ? { status: 500 } : undefined
@@ -102,26 +56,12 @@ export async function POST() {
     const cachedCoop = cache?.ashlandCoop;
     console.log("Cache status:", cache ? "exists" : "empty");
 
-    // Fetch the sales flyer page to get current PDF links
-    console.log("Fetching ashlandfood.coop/sales-flyer...");
-    const response = await fetch("https://ashlandfood.coop/sales-flyer", {
-      cache: "no-store",
-    });
+    // Probe the sales flyer page for the current PDF link (cheap)
+    const { mainFlyerLink, mainFlyerFileName } = await probeAshlandCoop();
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch page: ${response.status}`);
+    if (!mainFlyerLink) {
+      throw new Error("Failed to find flyer PDF link on the sales-flyer page");
     }
-
-    const html = await response.text();
-    const { mainFlyerLink, nationalCoopLink } = extractPdfLinks(html);
-
-    // Check if we need to update based on links changing
-    const mainFlyerFileName = mainFlyerLink
-      ? extractFilename(mainFlyerLink)
-      : null;
-    const nationalCoopFileName = nationalCoopLink
-      ? extractFilename(nationalCoopLink)
-      : null;
 
     // Update needed when the flyer filename changed, the section is older
     // than the TTL (flyers are sometimes replaced at the same filename), or
@@ -132,57 +72,31 @@ export async function POST() {
       !cachedCoop?.pdfData ||
       cacheTooOld ||
       cachedCoop.pdfFileName !== mainFlyerFileName;
-    const needsCoopUpdate =
-      !cachedCoop?.nationalCoopPdfData ||
-      cacheTooOld ||
-      cachedCoop.nationalCoopPdfFileName !== nationalCoopFileName;
 
-    console.log(
-      "Main flyer needs update:",
-      needsMainUpdate,
-      "| National Co-op needs update:",
-      needsCoopUpdate
-    );
+    console.log("Main flyer needs update:", needsMainUpdate);
 
     // Prepare data from cache
     let pdfData = cachedCoop?.pdfData || null;
     let pdfFileName = cachedCoop?.pdfFileName || null;
-    let nationalCoopPdfData = cachedCoop?.nationalCoopPdfData || null;
-    let nationalCoopPdfFileName = cachedCoop?.nationalCoopPdfFileName || null;
 
     // Download main flyer if needed
-    if (needsMainUpdate && mainFlyerLink) {
+    if (needsMainUpdate) {
       console.log("Downloading main flyer...");
       const data = await downloadPdf(mainFlyerLink);
       if (data) {
         pdfData = data;
         pdfFileName = mainFlyerFileName;
       }
-    } else if (!needsMainUpdate) {
+    } else {
       console.log("✓ Main flyer - serving from cache");
     }
 
-    // Download National Co-op flyer if needed
-    if (needsCoopUpdate && nationalCoopLink) {
-      console.log("Downloading National Co-op flyer...");
-      const data = await downloadPdf(nationalCoopLink);
-      if (data) {
-        nationalCoopPdfData = data;
-        nationalCoopPdfFileName = nationalCoopFileName;
-      }
-    } else if (!needsCoopUpdate) {
-      console.log("✓ National Co-op flyer - serving from cache");
-    }
-
     // Update cache if anything changed
-    if (needsMainUpdate || needsCoopUpdate) {
+    if (needsMainUpdate && pdfData) {
       updateCacheSection("ashlandCoop", {
         pdfData,
         pdfFileName,
-        nationalCoopPdfData,
-        nationalCoopPdfFileName,
         mainFlyerLink,
-        nationalCoopLink,
         lastUpdated: new Date().toISOString(),
       });
       console.log("Cache updated");
@@ -190,24 +104,16 @@ export async function POST() {
 
     return createResponse(
       true,
-      pdfData || nationalCoopPdfData
-        ? "Successfully downloaded Ashland Food Coop flyers"
-        : "No flyers found",
+      pdfData ? "Successfully downloaded Ashland Food Coop flyer" : "No flyer found",
       pdfData,
       pdfFileName,
-      nationalCoopPdfData,
-      nationalCoopPdfFileName,
-      mainFlyerLink,
-      nationalCoopLink
+      mainFlyerLink
     );
   } catch (error) {
     console.error("API error:", error);
     return createResponse(
       false,
-      "Failed to fetch Ashland Food Coop flyers",
-      undefined,
-      undefined,
-      undefined,
+      "Failed to fetch Ashland Food Coop flyer",
       undefined,
       undefined,
       undefined,
