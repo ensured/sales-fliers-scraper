@@ -251,7 +251,7 @@ export default function PDFViewer({
   return (
     <div className="flex flex-col w-full h-full relative">
       {/* Controls Overlay - Floating Top */}
-      <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between z-10 pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 p-4 flex items-start flex-wrap gap-2 z-10 pointer-events-none">
         {/* Page Navigation Pill */}
         <div className="pointer-events-auto">
           {numPages > 1 && (
@@ -284,7 +284,7 @@ export default function PDFViewer({
         </div>
 
         {/* Zoom Controls Pill */}
-        <div className="pointer-events-auto flex items-center bg-secondary/50 rounded-full p-1 border border-border/50 backdrop-blur-sm shadow-sm">
+        <div className="pointer-events-auto ml-auto flex items-center max-w-full bg-secondary/50 rounded-full p-1 border border-border/50 backdrop-blur-sm shadow-sm">
           <Button
             variant="ghost"
             size="icon"
