@@ -10,18 +10,21 @@ import {
   RotateCcw,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 
 interface PDFViewerProps {
   file: string;
   onDocumentLoadSuccess?: (numPages: number) => void;
   onError?: (error: Error) => void;
+  onClose?: () => void;
 }
 
 export default function PDFViewer({
   file,
   onDocumentLoadSuccess,
   onError,
+  onClose,
 }: PDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -311,6 +314,22 @@ export default function PDFViewer({
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
+          {onClose && (
+            <>
+              <div className="w-px h-4 bg-border mx-1" />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onClose}
+                className="h-7 rounded-full gap-1 px-3 hover:bg-background/80 transition-colors"
+                title="Close flyer (Esc)"
+                aria-label="Close flyer"
+              >
+                <X className="h-3.5 w-3.5" />
+                Close
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
